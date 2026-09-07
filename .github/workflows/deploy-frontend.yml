@@ -1,0 +1,84 @@
+name: Deploy Frontend via SSM
+
+on:
+  push:
+    branches:
+      - deploy
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: frontend-ux
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      - name: Configurar credenciales de AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Iniciar sesión en AWS ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Garantizar existencia de repositorio en ECR
+        run: |
+          aws ecr describe-repositories --repository-names ${{ env.ECR_REPOSITORY }} --region ${{ env.AWS_REGION }} || \
+          aws ecr create-repository --repository-name ${{ env.ECR_REPOSITORY }} --region ${{ env.AWS_REGION }}
+
+      - name: Construir y subir imagen a AWS ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build \
+            --build-arg VITE_AZURE_CLIENT_ID="${{ secrets.VITE_AZURE_CLIENT_ID }}" \
+            --build-arg VITE_AZURE_TENANT_ID="${{ secrets.VITE_AZURE_TENANT_ID }}" \
+            --build-arg VITE_AZURE_SCOPE="${{ secrets.VITE_AZURE_SCOPE }}" \
+            --build-arg VITE_MS_USUARIOS_URL="${{ secrets.VITE_MS_USUARIOS_URL }}" \
+            --build-arg VITE_MS_PRODUCTOS_URL="${{ secrets.VITE_MS_PRODUCTOS_URL }}" \
+            --build-arg VITE_MS_CARRITO_URL="${{ secrets.VITE_MS_CARRITO_URL }}" \
+            -t $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG \
+            -t $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:latest \
+            ./Frontend_dev
+
+          docker push $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG
+          docker push $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:latest
+
+      - name: Transferir Compose y Desplegar vía SSM
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        run: |
+          COMPOSE_BASE64=$(base64 -w 0 Frontend_dev/docker-compose.yml)
+
+          COMMAND_ID=$(aws ssm send-command \
+            --instance-ids "${{ secrets.EC2_INSTANCE_ID }}" \
+            --document-name "AWS-RunShellScript" \
+            --parameters commands="[
+              \"aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${ECR_REGISTRY}\",
+              \"docker network create ecommerce-network || true\",
+              \"mkdir -p /home/ec2-user/app-frontend\",
+              \"echo ${COMPOSE_BASE64} | base64 -d > /home/ec2-user/app-frontend/docker-compose.yml\",
+              \"cd /home/ec2-user/app-frontend\",
+              \"export ECR_REGISTRY=${ECR_REGISTRY}\",
+              \"docker compose pull\",
+              \"docker compose up -d --remove-orphans\"
+            ]" \
+            --region ${{ env.AWS_REGION }} \
+            --query "Command.CommandId" \
+            --output text)
+
+          echo "Comando SSM enviado con ID: $COMMAND_ID"
+
+          aws ssm wait command-executed \
+            --command-id "$COMMAND_ID" \
+            --instance-id "${{ secrets.EC2_INSTANCE_ID }}" \
+            --region ${{ env.AWS_REGION }}
