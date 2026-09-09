@@ -1,0 +1,13 @@
+services:
+  ecommerce-frontend:
+    image: ${ECR_REGISTRY}/frontend-ux:latest
+    container_name: ecommerce-frontend
+    ports:
+      - "80:80"
+    restart: always
+    networks:
+      - ecommerce-network
+
+networks:
+  ecommerce-network:
+    external: true
