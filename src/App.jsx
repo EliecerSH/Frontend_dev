@@ -6,6 +6,7 @@ import Footer from './components/Footer'
 import Home from './pages/Home'
 import ProductDetail from './pages/ProductDetail'
 import Cart from './pages/Cart'
+import Orders from './pages/Orders'
 import Account from './pages/Account'
 import Admin from './pages/Admin'
 
@@ -21,6 +22,19 @@ export default function App() {
           <Route path="/" element={<Home searchQuery={searchQuery} />} />
           <Route path="/producto/:id" element={<ProductDetail />} />
           <Route path="/carrito" element={<Cart />} />
+          <Route
+            path="/pedidos"
+            element={
+              <>
+                <AuthenticatedTemplate>
+                  <Orders />
+                </AuthenticatedTemplate>
+                <UnauthenticatedTemplate>
+                  <div className="page state-message">Inicia sesión para ver tus pedidos.</div>
+                </UnauthenticatedTemplate>
+              </>
+            }
+          />
           <Route
             path="/cuenta"
             element={

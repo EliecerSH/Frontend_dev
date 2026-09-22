@@ -71,6 +71,10 @@ export default function Navbar({ onSearch }) {
                         {itemCount > 0 && <span className="cart-count">{itemCount}</span>}
                     </Link>
 
+                    {isAuthenticated && (
+                        <Link to="/pedidos" onClick={() => setMenuOpen(false)}>Mis pedidos</Link>
+                    )}
+
                     {isAuthenticated ? (
                         <div className="navbar-account">
                             <Link to="/cuenta" className="navbar-user" onClick={() => setMenuOpen(false)}>

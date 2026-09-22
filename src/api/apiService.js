@@ -157,6 +157,39 @@ export const vaciarCarrito = async (msalInstance) => {
 };
 
 // ---------------------------------------------------------------------------
+// MS-ORDENES (todo protegido)
+// ---------------------------------------------------------------------------
+
+// POST /ordenes -> registra formalmente la orden a partir del snapshot del carrito.
+// Dispara el flujo asíncrono: descuento de stock, envío de correo y auditoría.
+export const crearOrden = async (msalInstance, items) => {
+    const token = await getAccessToken(msalInstance);
+    const res = await fetch(ENDPOINTS.ORDENES, {
+        method: 'POST',
+        headers: authHeaders(token),
+        body: JSON.stringify({
+            items: items.map((it) => ({
+                productoId: it.productoId,
+                cantidad: it.cantidad,
+                precioUnitario: it.precioUnitario,
+            })),
+        }),
+    });
+    if (!res.ok) throw new Error(await parseError(res, 'Error al procesar la orden'));
+    return res.json();
+};
+
+// GET /ordenes -> historial de compras del usuario autenticado
+export const fetchOrdenes = async (msalInstance) => {
+    const token = await getAccessToken(msalInstance);
+    const res = await fetch(ENDPOINTS.ORDENES, {
+        headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error(await parseError(res, 'Error al obtener tus pedidos'));
+    return res.json();
+};
+
+// ---------------------------------------------------------------------------
 // MS-USUARIOS (todo protegido, salvo lo indicado)
 // ---------------------------------------------------------------------------
 

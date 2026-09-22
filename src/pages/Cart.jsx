@@ -1,18 +1,21 @@
 // src/pages/Cart.jsx
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useIsAuthenticated, useMsal } from '@azure/msal-react';
 import { loginRequest } from '../AuthConfig';
 import { useCart } from '../context/CartContext';
-import { fetchProductoPorId } from '../api/apiService';
+import { fetchProductoPorId, crearOrden } from '../api/apiService';
 import ProductImage from '../components/ProductImage';
 import { formatPrice } from '../utils/format';
 
 export default function Cart() {
     const isAuthenticated = useIsAuthenticated();
     const { instance } = useMsal();
+    const navigate = useNavigate();
     const { items, total, loading, error, updateQuantity, removeItem, clearCart } = useCart();
     const [productos, setProductos] = useState({});
+    const [procesando, setProcesando] = useState(false);
+    const [errorCheckout, setErrorCheckout] = useState(null);
 
     useEffect(() => {
         const faltantes = items
@@ -44,6 +47,20 @@ export default function Cart() {
             await instance.loginPopup(loginRequest);
         } catch (err) {
             console.error(err);
+        }
+    };
+
+    const handleFinalizarCompra = async () => {
+        setProcesando(true);
+        setErrorCheckout(null);
+        try {
+            const orden = await crearOrden(instance, items);
+            await clearCart();
+            navigate('/pedidos', { state: { ordenRecienCreada: orden.id } });
+        } catch (err) {
+            setErrorCheckout(err.message);
+        } finally {
+            setProcesando(false);
         }
     };
 
@@ -124,7 +141,14 @@ export default function Cart() {
                             <span>Total</span>
                             <span>{formatPrice(total)}</span>
                         </div>
-                        <button className="btn btn-primary btn-lg btn-block">Finalizar compra</button>
+                        {errorCheckout && <p className="state-message state-error">{errorCheckout}</p>}
+                        <button
+                            className="btn btn-primary btn-lg btn-block"
+                            onClick={handleFinalizarCompra}
+                            disabled={procesando}
+                        >
+                            {procesando ? 'Procesando…' : 'Finalizar compra'}
+                        </button>
                     </aside>
                 </div>
             )}
