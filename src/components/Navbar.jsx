@@ -4,6 +4,7 @@ import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useMsal, useIsAuthenticated } from '@azure/msal-react';
 import { loginRequest } from '../AuthConfig';
 import { useCart } from '../context/CartContext';
+import { useUserRole } from '../context/RoleContext';
 import { IconBolt, IconSearch, IconCart, IconMenu, IconClose } from './Icons';
 
 const navLinkClass = ({ isActive }) => `nav-link${isActive ? ' nav-link-active' : ''}`;
@@ -11,6 +12,7 @@ const navLinkClass = ({ isActive }) => `nav-link${isActive ? ' nav-link-active' 
 export default function Navbar({ onSearch }) {
     const { instance, accounts } = useMsal();
     const isAuthenticated = useIsAuthenticated();
+    const { isAdmin } = useUserRole();
     const activeAccount = accounts[0];
     const { itemCount } = useCart();
     const navigate = useNavigate();
@@ -76,8 +78,11 @@ export default function Navbar({ onSearch }) {
                         <NavLink to="/pedidos" className={navLinkClass} onClick={closeMenu}>Mis pedidos</NavLink>
                     )}
 
-                    {isAuthenticated && (
-                        <NavLink to="/admin" className={navLinkClass} onClick={closeMenu}>Administrar</NavLink>
+                    {isAuthenticated && isAdmin && (
+                        <>
+                            <NavLink to="/admin" className={navLinkClass} onClick={closeMenu}>Administrar</NavLink>
+                            <NavLink to="/auditoria" className={navLinkClass} onClick={closeMenu}>Auditoría</NavLink>
+                        </>
                     )}
 
                     <NavLink to="/carrito" className={(s) => `${navLinkClass(s)} navbar-cart`} onClick={closeMenu}>

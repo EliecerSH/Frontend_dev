@@ -236,3 +236,39 @@ export const actualizarUsuario = async (msalInstance, id, datosPerfil) => {
     if (!res.ok) throw new Error(await parseError(res, 'Error al actualizar el perfil'));
     return res.json();
 };
+
+// ---------------------------------------------------------------------------
+// MS-AUDITORIA (protegido - solo rol Admin)
+// ---------------------------------------------------------------------------
+
+const getAuditoriaUrl = () => {
+    const raw = (ENDPOINTS.AUDITORIA || '').trim().replace(/\/+$/, '');
+    if (!raw) return '';
+    if (raw.endsWith('/auditoria')) return raw;
+    return `${raw}/api/v1/auditoria`;
+};
+
+// GET /api/v1/auditoria -> registros ordenados por recibidoEn descendente
+export const fetchAuditoria = async (msalInstance) => {
+    const token = await getAccessToken(msalInstance);
+    const url = getAuditoriaUrl();
+    if (!url) {
+        throw new Error('La URL del microservicio de auditoría no está configurada (VITE_MS_AUDITORIA_URL).');
+    }
+
+    const res = await fetch(url, {
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+        },
+    });
+
+    if (!res.ok) {
+        if (res.status === 403) {
+            throw new Error('Acceso denegado por el microservicio: Se requiere el rol Admin en el token para ver la auditoría.');
+        }
+        throw new Error(await parseError(res, 'Error al obtener los registros de auditoría'));
+    }
+
+    return res.json();
+};

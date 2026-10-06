@@ -5,6 +5,7 @@ import { PublicClientApplication, EventType } from '@azure/msal-browser'
 import { MsalProvider } from '@azure/msal-react'
 import { msalConfig } from './AuthConfig'
 import { CartProvider } from './context/CartContext'
+import { RoleProvider } from './context/RoleContext'
 import App from './App'
 import './App.css'
 
@@ -29,9 +30,11 @@ msalInstance.initialize().then(() => {
     <React.StrictMode>
       <MsalProvider instance={msalInstance}>
         <BrowserRouter>
-          <CartProvider>
-            <App />
-          </CartProvider>
+          <RoleProvider>
+            <CartProvider>
+              <App />
+            </CartProvider>
+          </RoleProvider>
         </BrowserRouter>
       </MsalProvider>
     </React.StrictMode>,

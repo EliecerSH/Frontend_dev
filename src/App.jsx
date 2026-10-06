@@ -9,6 +9,26 @@ import Cart from './pages/Cart'
 import Orders from './pages/Orders'
 import Account from './pages/Account'
 import Admin from './pages/Admin'
+import Audit from './pages/Audit'
+import { useUserRole } from './context/RoleContext'
+
+function AdminRoute({ children }) {
+  const { isAdmin, loadingRole } = useUserRole();
+
+  if (loadingRole) {
+    return <div className="page state-message" role="status">Verificando permisos…</div>;
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="page state-message state-error" role="alert">
+        Acceso restringido: Se requieren permisos de Administrador para acceder a esta sección.
+      </div>
+    );
+  }
+
+  return children;
+}
 
 export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -53,10 +73,27 @@ export default function App() {
             element={
               <>
                 <AuthenticatedTemplate>
-                  <Admin />
+                  <AdminRoute>
+                    <Admin />
+                  </AdminRoute>
                 </AuthenticatedTemplate>
                 <UnauthenticatedTemplate>
                   <div className="page state-message">Inicia sesión para administrar el catálogo.</div>
+                </UnauthenticatedTemplate>
+              </>
+            }
+          />
+          <Route
+            path="/auditoria"
+            element={
+              <>
+                <AuthenticatedTemplate>
+                  <AdminRoute>
+                    <Audit />
+                  </AdminRoute>
+                </AuthenticatedTemplate>
+                <UnauthenticatedTemplate>
+                  <div className="page state-message">Inicia sesión como Administrador para ver los registros de auditoría.</div>
                 </UnauthenticatedTemplate>
               </>
             }

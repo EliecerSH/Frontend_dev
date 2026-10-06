@@ -10,6 +10,7 @@ import {
 import ProductImage from '../components/ProductImage';
 import { formatPrice } from '../utils/format';
 import { IconBox } from '../components/Icons';
+import { useUserRole } from '../context/RoleContext';
 
 const emptyForm = {
     nombre: '',
@@ -22,6 +23,7 @@ const emptyForm = {
 
 export default function Admin() {
     const { instance } = useMsal();
+    const { isAdmin, loadingRole } = useUserRole();
     const [productos, setProductos] = useState([]);
     const [loading, setLoading] = useState(true);
     const [form, setForm] = useState(emptyForm);
@@ -30,6 +32,10 @@ export default function Admin() {
     const [feedback, setFeedback] = useState(null);
 
     const cargarProductos = async () => {
+        if (!isAdmin) {
+            setLoading(false);
+            return;
+        }
         setLoading(true);
         try {
             const data = await fetchProductos();
@@ -42,8 +48,12 @@ export default function Admin() {
     };
 
     useEffect(() => {
-        cargarProductos();
-    }, []);
+        if (!loadingRole && isAdmin) {
+            cargarProductos();
+        } else if (!loadingRole && !isAdmin) {
+            setLoading(false);
+        }
+    }, [isAdmin, loadingRole]);
 
     const handleChange = (e) => {
         setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -109,6 +119,18 @@ export default function Admin() {
             setFeedback({ type: 'error', text: err.message });
         }
     };
+
+    if (loadingRole) {
+        return <div className="page state-message" role="status">Verificando permisos…</div>;
+    }
+
+    if (!isAdmin) {
+        return (
+            <div className="page state-message state-error" role="alert">
+                Acceso restringido: No cuentas con permisos de Administrador para gestionar el catálogo.
+            </div>
+        );
+    }
 
     return (
         <div className="page admin-page">

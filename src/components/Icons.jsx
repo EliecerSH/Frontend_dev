@@ -36,3 +36,6 @@ export const IconTruck = make(<><rect x="1" y="6" width="13" height="10" rx="1" 
 export const IconReturn = make(<><path d="M3 12a9 9 0 0 1 15.5-6.3L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-15.5 6.3L3 16" /><path d="M3 21v-5h5" /></>);
 export const IconShield = make(<><path d="M12 3 4 6v6c0 4.5 3.2 8.2 8 9 4.8-.8 8-4.5 8-9V6Z" /><path d="m9 12 2 2 4-4" /></>);
 export const IconImage = make(<><rect x="3" y="4" width="18" height="16" rx="2" /><circle cx="9" cy="10" r="1.8" /><path d="m3 17 5-4.5 4 3.5 3-2.5 6 5" /></>);
+export const IconActivity = make(<path d="M22 12h-4l-3 9L9 3l-3 9H2" />);
+export const IconCopy = make(<><rect width="14" height="14" x="8" y="8" rx="2" ry="2" /><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" /></>);
+export const IconRefresh = make(<><path d="M3 12a9 9 0 0 1 15-6.7L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-15 6.7L3 16" /><path d="M3 21v-5h5" /></>);

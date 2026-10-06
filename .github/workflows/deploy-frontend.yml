@@ -47,6 +47,7 @@ jobs:
             --build-arg VITE_MS_PRODUCTOS_URL="${{ secrets.VITE_MS_PRODUCTOS_URL }}" \
             --build-arg VITE_MS_CARRITO_URL="${{ secrets.VITE_MS_CARRITO_URL }}" \
             --build-arg VITE_MS_ORDENES_URL="${{ secrets.VITE_MS_ORDENES_URL }}" \
+            --build-arg VITE_MS_AUDITORIA_URL="${{ secrets.VITE_MS_AUDITORIA_URL }}" \
             -t $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG \
             -t $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:latest \
             .

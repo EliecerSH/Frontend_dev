@@ -32,4 +32,5 @@ export const ENDPOINTS = {
     PRODUCTOS: import.meta.env.VITE_MS_PRODUCTOS_URL,
     CARRITO: import.meta.env.VITE_MS_CARRITO_URL,
     ORDENES: import.meta.env.VITE_MS_ORDENES_URL,
+    AUDITORIA: import.meta.env.VITE_MS_AUDITORIA_URL,
 };

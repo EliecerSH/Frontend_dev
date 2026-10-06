@@ -6,6 +6,7 @@
 import React, { useEffect, useState } from 'react';
 import { useMsal } from '@azure/msal-react';
 import { fetchClaimsUsuario, fetchUsuario, registrarUsuario, actualizarUsuario } from '../api/apiService';
+import { useUserRole } from '../context/RoleContext';
 
 const storageKey = (oid) => `nexustech.perfilId.${oid}`;
 
@@ -14,6 +15,7 @@ const emptyForm = { nombre: '', direccion: '', comuna: '', region: '', ciudad: '
 export default function Account() {
     const { instance, accounts } = useMsal();
     const activeAccount = accounts[0];
+    const { roles, isAdmin } = useUserRole();
 
     const [claims, setClaims] = useState(null);
     const [perfilId, setPerfilId] = useState(null);
@@ -102,6 +104,23 @@ export default function Account() {
                 <div className="account-summary-info">
                     <h3>{activeAccount?.name}</h3>
                     <p>{activeAccount?.username || claims?.email}</p>
+                    <span
+                        className={`status-indicator ${isAdmin ? 'status-success' : 'status-neutral'}`}
+                        style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            marginTop: '0.4rem',
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            padding: '0.2rem 0.65rem',
+                            borderRadius: '999px',
+                            width: 'fit-content',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.04em',
+                        }}
+                    >
+                        Rol: {roles.length > 0 ? roles.join(', ') : (isAdmin ? 'Admin' : 'User')}
+                    </span>
                 </div>
             </div>
 
