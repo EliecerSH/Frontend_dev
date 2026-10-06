@@ -8,13 +8,13 @@ export default function ProductCard({ producto, onAddToCart, adding }) {
     const sinStock = !producto.stock || producto.stock <= 0;
 
     return (
-        <div className="product-card">
-            <Link to={`/producto/${producto.id}`} className="product-card-media">
+        <article className="product-card">
+            <Link to={`/producto/${producto.id}`} className="product-card-media" tabIndex={-1} aria-hidden="true">
                 <ProductImage src={producto.imagenUrl} alt={producto.nombre} />
                 {sinStock && <span className="badge badge-outstock">Sin stock</span>}
-                {producto.categoria && <span className="badge badge-category">{producto.categoria}</span>}
             </Link>
             <div className="product-card-body">
+                {producto.categoria && <span className="product-card-category">{producto.categoria}</span>}
                 <Link to={`/producto/${producto.id}`} className="product-card-title">
                     {producto.nombre}
                 </Link>
@@ -32,6 +32,6 @@ export default function ProductCard({ producto, onAddToCart, adding }) {
                     </button>
                 </div>
             </div>
-        </div>
+        </article>
     );
 }

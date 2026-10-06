@@ -9,6 +9,7 @@ import {
 } from '../api/apiService';
 import ProductImage from '../components/ProductImage';
 import { formatPrice } from '../utils/format';
+import { IconBox } from '../components/Icons';
 
 const emptyForm = {
     nombre: '',
@@ -111,10 +112,12 @@ export default function Admin() {
 
     return (
         <div className="page admin-page">
-            <h1>Gestión de productos</h1>
-            <p className="form-hint">Aquí puedes publicar, editar o retirar productos del catálogo.</p>
+            <header className="page-header">
+                <h1>Gestión de productos</h1>
+                <p>Publica, edita o retira productos del catálogo.</p>
+            </header>
 
-            {feedback && <div className={`alert alert-${feedback.type}`}>{feedback.text}</div>}
+            {feedback && <div className={`alert alert-${feedback.type}`} role="status">{feedback.text}</div>}
 
             <form className="admin-form card" onSubmit={handleSubmit}>
                 <h3>{editId ? 'Editar producto' : 'Nuevo producto'}</h3>
@@ -157,19 +160,27 @@ export default function Admin() {
                 </div>
             </form>
 
-            <h3 className="admin-list-title">Catálogo actual ({productos.length})</h3>
+            <h2 className="admin-list-title">Catálogo actual <span>({productos.length})</span></h2>
 
-            {loading && <p className="state-message">Cargando productos…</p>}
+            {loading && <p className="state-message" role="status">Cargando productos…</p>}
 
             {!loading && productos.length === 0 && (
                 <div className="empty-state">
-                    <div className="empty-state-icon">📦</div>
+                    <div className="empty-state-icon"><IconBox size={28} /></div>
                     <h3>Todavía no has publicado productos</h3>
                     <p>Usa el formulario de arriba para agregar el primero.</p>
                 </div>
             )}
 
+            {productos.length > 0 && (
             <div className="admin-table">
+                <div className="admin-row admin-row-head" aria-hidden="true">
+                    <span></span>
+                    <span>Producto</span>
+                    <span>Precio</span>
+                    <span>Stock</span>
+                    <span>Acciones</span>
+                </div>
                 {productos.map((producto) => (
                     <div className="admin-row" key={producto.id}>
                         <ProductImage src={producto.imagenUrl} alt={producto.nombre} className="admin-row-image" />
@@ -188,6 +199,7 @@ export default function Admin() {
                     </div>
                 ))}
             </div>
+            )}
         </div>
     );
 }

@@ -7,6 +7,7 @@ import { fetchProductoPorId } from '../api/apiService';
 import { useCart } from '../context/CartContext';
 import ProductImage from '../components/ProductImage';
 import { formatPrice } from '../utils/format';
+import { IconArrowLeft } from '../components/Icons';
 
 export default function ProductDetail() {
     const { id } = useParams();
@@ -54,7 +55,7 @@ export default function ProductDetail() {
         );
     };
 
-    if (loading) return <div className="page state-message">Cargando producto…</div>;
+    if (loading) return <div className="page state-message" role="status">Cargando producto…</div>;
     if (error) return <div className="page state-message state-error">{error}</div>;
     if (!producto) return null;
 
@@ -62,7 +63,7 @@ export default function ProductDetail() {
 
     return (
         <div className="page product-detail-page">
-            <button className="btn-link back-link" onClick={() => navigate(-1)}>← Volver</button>
+            <button className="btn-link back-link" onClick={() => navigate(-1)}><IconArrowLeft size={16} /> Volver</button>
 
             <div className="product-detail">
                 <div className="product-detail-media">
@@ -70,7 +71,7 @@ export default function ProductDetail() {
                 </div>
 
                 <div className="product-detail-info">
-                    {producto.categoria && <span className="badge badge-category">{producto.categoria}</span>}
+                    {producto.categoria && <span className="product-detail-category">{producto.categoria}</span>}
                     <h1>{producto.nombre}</h1>
                     <p className="product-detail-price">{formatPrice(producto.precio)}</p>
                     <p className="product-detail-desc">{producto.descripcion || 'Sin descripción disponible.'}</p>
@@ -79,13 +80,13 @@ export default function ProductDetail() {
                         {sinStock ? 'Sin stock disponible' : `${producto.stock} unidades disponibles`}
                     </p>
 
-                    {feedback && <div className={`alert alert-${feedback.type}`}>{feedback.text}</div>}
+                    {feedback && <div className={`alert alert-${feedback.type}`} role="status">{feedback.text}</div>}
 
                     {!sinStock && (
                         <div className="quantity-row">
                             <label htmlFor="cantidad">Cantidad</label>
                             <div className="quantity-control">
-                                <button onClick={() => setCantidad((c) => Math.max(1, c - 1))}>-</button>
+                                <button type="button" aria-label="Quitar una unidad" onClick={() => setCantidad((c) => Math.max(1, c - 1))}>−</button>
                                 <input
                                     id="cantidad"
                                     type="number"
@@ -96,7 +97,7 @@ export default function ProductDetail() {
                                         setCantidad(Math.min(producto.stock, Math.max(1, Number(e.target.value) || 1)))
                                     }
                                 />
-                                <button onClick={() => setCantidad((c) => Math.min(producto.stock, c + 1))}>+</button>
+                                <button type="button" aria-label="Agregar una unidad" onClick={() => setCantidad((c) => Math.min(producto.stock, c + 1))}>+</button>
                             </div>
                         </div>
                     )}

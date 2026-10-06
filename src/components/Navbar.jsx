@@ -1,9 +1,12 @@
 // src/components/Navbar.jsx
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useMsal, useIsAuthenticated } from '@azure/msal-react';
 import { loginRequest } from '../AuthConfig';
 import { useCart } from '../context/CartContext';
+import { IconBolt, IconSearch, IconCart, IconMenu, IconClose } from './Icons';
+
+const navLinkClass = ({ isActive }) => `nav-link${isActive ? ' nav-link-active' : ''}`;
 
 export default function Navbar({ onSearch }) {
     const { instance, accounts } = useMsal();
@@ -13,6 +16,8 @@ export default function Navbar({ onSearch }) {
     const navigate = useNavigate();
     const [query, setQuery] = useState('');
     const [menuOpen, setMenuOpen] = useState(false);
+
+    const closeMenu = () => setMenuOpen(false);
 
     const handleLogin = async () => {
         try {
@@ -30,59 +35,65 @@ export default function Navbar({ onSearch }) {
         e.preventDefault();
         onSearch?.(query.trim());
         navigate('/');
-        setMenuOpen(false);
+        closeMenu();
     };
 
     return (
         <header className="navbar">
             <div className="navbar-inner">
-                <Link to="/" className="brand" onClick={() => setMenuOpen(false)}>
-                    <span className="brand-mark">⚡</span>
+                <Link to="/" className="brand" onClick={closeMenu}>
+                    <span className="brand-mark"><IconBolt size={16} /></span>
                     <span className="brand-name">Nexus<span className="brand-accent">Tech</span></span>
                 </Link>
 
-                <form className="navbar-search" onSubmit={handleSubmitSearch}>
+                <form className="navbar-search" onSubmit={handleSubmitSearch} role="search">
                     <input
-                        type="text"
+                        type="search"
                         placeholder="Buscar notebooks, celulares, componentes…"
+                        aria-label="Buscar productos"
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
                     />
-                    <button type="submit" aria-label="Buscar">🔍</button>
+                    <button type="submit" aria-label="Buscar">
+                        <IconSearch size={18} />
+                    </button>
                 </form>
 
                 <button
                     className="navbar-burger"
-                    aria-label="Abrir menú"
+                    aria-label={menuOpen ? 'Cerrar menú' : 'Abrir menú'}
+                    aria-expanded={menuOpen}
+                    aria-controls="navbar-links"
                     onClick={() => setMenuOpen((v) => !v)}
                 >
-                    ☰
+                    {menuOpen ? <IconClose size={22} /> : <IconMenu size={22} />}
                 </button>
 
-                <nav className={`navbar-links ${menuOpen ? 'open' : ''}`}>
-                    <Link to="/" onClick={() => setMenuOpen(false)}>Catálogo</Link>
+                <nav id="navbar-links" className={`navbar-links ${menuOpen ? 'open' : ''}`}>
+                    <NavLink to="/" end className={navLinkClass} onClick={closeMenu}>Catálogo</NavLink>
 
                     {isAuthenticated && (
-                        <Link to="/admin" onClick={() => setMenuOpen(false)}>Administrar</Link>
+                        <NavLink to="/pedidos" className={navLinkClass} onClick={closeMenu}>Mis pedidos</NavLink>
                     )}
 
-                    <Link to="/carrito" className="navbar-cart" onClick={() => setMenuOpen(false)}>
-                        🛒 Carrito
+                    {isAuthenticated && (
+                        <NavLink to="/admin" className={navLinkClass} onClick={closeMenu}>Administrar</NavLink>
+                    )}
+
+                    <NavLink to="/carrito" className={(s) => `${navLinkClass(s)} navbar-cart`} onClick={closeMenu}>
+                        <IconCart size={19} />
+                        Carrito
                         {itemCount > 0 && <span className="cart-count">{itemCount}</span>}
-                    </Link>
-
-                    {isAuthenticated && (
-                        <Link to="/pedidos" onClick={() => setMenuOpen(false)}>Mis pedidos</Link>
-                    )}
+                    </NavLink>
 
                     {isAuthenticated ? (
                         <div className="navbar-account">
-                            <Link to="/cuenta" className="navbar-user" onClick={() => setMenuOpen(false)}>
+                            <Link to="/cuenta" className="navbar-user" onClick={closeMenu}>
                                 <span className="avatar">{activeAccount?.name?.charAt(0) || 'U'}</span>
                                 <span className="navbar-user-name">{activeAccount?.name?.split(' ')[0]}</span>
                             </Link>
                             <button className="btn btn-secondary btn-sm" onClick={handleLogout}>
-                                Salir
+                                Cerrar sesión
                             </button>
                         </div>
                     ) : (

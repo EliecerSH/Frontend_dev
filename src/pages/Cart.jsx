@@ -7,6 +7,7 @@ import { useCart } from '../context/CartContext';
 import { fetchProductoPorId, crearOrden } from '../api/apiService';
 import ProductImage from '../components/ProductImage';
 import { formatPrice } from '../utils/format';
+import { IconLock, IconCart } from '../components/Icons';
 
 export default function Cart() {
     const isAuthenticated = useIsAuthenticated();
@@ -68,7 +69,7 @@ export default function Cart() {
         return (
             <div className="page cart-page">
                 <div className="empty-state">
-                    <div className="empty-state-icon">🔒</div>
+                    <div className="empty-state-icon"><IconLock size={28} /></div>
                     <h3>Inicia sesión para ver tu carrito</h3>
                     <p>Tu carrito se guarda asociado a tu cuenta.</p>
                     <button className="btn btn-primary" onClick={handleLogin}>Iniciar sesión</button>
@@ -79,14 +80,14 @@ export default function Cart() {
 
     return (
         <div className="page cart-page">
-            <h1>Tu carrito</h1>
+            <header className="page-header"><h1>Tu carrito</h1></header>
 
-            {loading && items.length === 0 && <p className="state-message">Cargando carrito…</p>}
+            {loading && items.length === 0 && <p className="state-message" role="status">Cargando carrito…</p>}
             {error && <p className="state-message state-error">{error}</p>}
 
             {!loading && items.length === 0 && !error && (
                 <div className="empty-state">
-                    <div className="empty-state-icon">🛒</div>
+                    <div className="empty-state-icon"><IconCart size={28} /></div>
                     <h3>Tu carrito está vacío</h3>
                     <p>Explora el catálogo y encuentra tu próximo dispositivo.</p>
                     <Link to="/" className="btn btn-primary">Ir al catálogo</Link>
@@ -109,9 +110,10 @@ export default function Cart() {
                                         </Link>
                                         <p className="cart-item-price">{formatPrice(item.precioUnitario)} c/u</p>
                                         <div className="quantity-control quantity-control-sm">
-                                            <button onClick={() => updateQuantity(item.productoId, item.cantidad - 1)}>-</button>
+                                            <button aria-label="Quitar una unidad" onClick={() => updateQuantity(item.productoId, item.cantidad - 1)}>−</button>
                                             <span>{item.cantidad}</span>
                                             <button
+                                                aria-label="Agregar una unidad"
                                                 onClick={() => updateQuantity(item.productoId, item.cantidad + 1)}
                                                 disabled={producto && item.cantidad >= producto.stock}
                                             >
@@ -128,7 +130,7 @@ export default function Cart() {
                                 </div>
                             );
                         })}
-                        <button className="btn-link" onClick={clearCart}>Vaciar carrito</button>
+                        <div className="cart-items-footer"><button className="btn-link" onClick={clearCart}>Vaciar carrito</button></div>
                     </div>
 
                     <aside className="cart-summary">

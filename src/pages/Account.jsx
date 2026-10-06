@@ -91,21 +91,21 @@ export default function Account() {
         }
     };
 
-    if (loading) return <div className="page state-message">Cargando tu cuenta…</div>;
+    if (loading) return <div className="page state-message" role="status">Cargando tu cuenta…</div>;
 
     return (
         <div className="page account-page">
-            <h1>Mi cuenta</h1>
+            <header className="page-header"><h1>Mi cuenta</h1></header>
 
             <div className="account-summary card">
                 <span className="avatar avatar-lg">{activeAccount?.name?.charAt(0) || 'U'}</span>
-                <div>
+                <div className="account-summary-info">
                     <h3>{activeAccount?.name}</h3>
                     <p>{activeAccount?.username || claims?.email}</p>
                 </div>
             </div>
 
-            {feedback && <div className={`alert alert-${feedback.type}`}>{feedback.text}</div>}
+            {feedback && <div className={`alert alert-${feedback.type}`} role="status">{feedback.text}</div>}
 
             <form className="account-form card" onSubmit={handleSubmit}>
                 <h3>{perfilId ? 'Datos de envío' : 'Completa tu perfil'}</h3>

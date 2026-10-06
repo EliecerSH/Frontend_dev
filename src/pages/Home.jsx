@@ -5,6 +5,7 @@ import { loginRequest } from '../AuthConfig';
 import { fetchProductos } from '../api/apiService';
 import { useCart } from '../context/CartContext';
 import ProductCard from '../components/ProductCard';
+import { IconTruck, IconReturn, IconShield, IconBag } from '../components/Icons';
 
 export default function Home({ searchQuery = '' }) {
     const [productos, setProductos] = useState([]);
@@ -76,43 +77,57 @@ export default function Home({ searchQuery = '' }) {
         <div className="page home-page">
             <section className="hero">
                 <div className="hero-text">
-                    <span className="hero-eyebrow">Envíos a todo Chile</span>
                     <h1>La tecnología que buscas, al mejor precio</h1>
                     <p>Notebooks, celulares, componentes, audio y gaming — todo en un solo lugar.</p>
+                    <a href="#catalogo" className="btn btn-primary btn-lg">Ver catálogo</a>
                 </div>
             </section>
 
+            <ul className="trust-strip">
+                <li><span className="trust-icon"><IconTruck size={20} /></span>Envíos a todo Chile</li>
+                <li><span className="trust-icon"><IconReturn size={20} /></span>Cambios y devoluciones</li>
+                <li><span className="trust-icon"><IconShield size={20} /></span>Garantía</li>
+            </ul>
+
             {feedback && (
-                <div className={`alert alert-${feedback.type}`}>{feedback.text}</div>
+                <div className={`alert alert-${feedback.type}`} role="status">{feedback.text}</div>
             )}
 
+            <section id="catalogo" className="catalog">
+            <div className="section-head">
+                <h2>Catálogo</h2>
+                {!loading && !error && (
+                    <p className="search-result-hint">
+                        {searchQuery
+                            ? `${productosFiltrados.length} resultados para «${searchQuery}»`
+                            : `${productosFiltrados.length} ${productosFiltrados.length === 1 ? 'producto' : 'productos'}`}
+                    </p>
+                )}
+            </div>
+
             <div className="catalog-toolbar">
-                <div className="category-chips">
+                <div className="category-chips" role="group" aria-label="Filtrar por categoría">
                     {categorias.map((cat) => (
                         <button
                             key={cat}
                             className={`chip ${categoria === cat ? 'chip-active' : ''}`}
+                            aria-pressed={categoria === cat}
                             onClick={() => setCategoria(cat)}
                         >
                             {cat}
                         </button>
                     ))}
                 </div>
-                {searchQuery && (
-                    <p className="search-result-hint">
-                        Resultados para «{searchQuery}»
-                    </p>
-                )}
             </div>
 
-            {loading && <p className="state-message">Cargando catálogo…</p>}
+            {loading && <p className="state-message" role="status">Cargando catálogo…</p>}
             {error && <p className="state-message state-error">No se pudo cargar el catálogo: {error}</p>}
 
             {!loading && !error && productosFiltrados.length === 0 && (
                 <div className="empty-state">
-                    <div className="empty-state-icon">🛍️</div>
-                    <h3>Aún no hay productos {categoria !== 'Todos' ? `en «${categoria}»` : 'publicados'}</h3>
-                    <p>Muy pronto encontrarás aquí el catálogo completo de tecnología y electrónica.</p>
+                    <div className="empty-state-icon"><IconBag size={28} /></div>
+                    <h3>{searchQuery ? `Sin resultados para «${searchQuery}»` : `Aún no hay productos ${categoria !== 'Todos' ? `en «${categoria}»` : 'publicados'}`}</h3>
+                    <p>{searchQuery ? 'Revisa la ortografía o prueba con otra palabra.' : 'Muy pronto encontrarás aquí el catálogo completo de tecnología y electrónica.'}</p>
                 </div>
             )}
 
@@ -126,6 +141,7 @@ export default function Home({ searchQuery = '' }) {
                     />
                 ))}
             </div>
+            </section>
         </div>
     );
 }
