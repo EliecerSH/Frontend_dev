@@ -7,6 +7,7 @@ services:
     restart: always
     networks:
       - ecommerce-network
+      
 
 networks:
   ecommerce-network:
