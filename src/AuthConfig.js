@@ -8,8 +8,8 @@ export const msalConfig = {
     auth: {
         clientId: clientId,
         authority: `https://login.microsoftonline.com/${tenantId}`,
-        redirectUri: "https://xnukucq99g.execute-api.us-east-1.amazonaws.com",
-        postLogoutRedirectUri:"https://xnukucq99g.execute-api.us-east-1.amazonaws.com",
+        redirectUri: "https://h31skp3y1g.execute-api.us-east-1.amazonaws.com",
+        postLogoutRedirectUri:"https://h31skp3y1g.execute-api.us-east-1.amazonaws.com",
     },
     cache: {
         cacheLocation: "sessionStorage",
