@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useIsAuthenticated, useMsal } from '@azure/msal-react';
 import { loginRequest } from '../AuthConfig';
 import { useCart } from '../context/CartContext';
-import { fetchProductoPorId, crearOrden } from '../api/apiService';
+import { fetchProductoPorId, crearOrden, iniciarPago, redirigirAWebpay, pagosHabilitados } from '../api/apiService';
 import ProductImage from '../components/ProductImage';
 import { formatPrice } from '../utils/format';
 import { IconLock, IconCart } from '../components/Icons';
@@ -54,13 +54,28 @@ export default function Cart() {
     const handleFinalizarCompra = async () => {
         setProcesando(true);
         setErrorCheckout(null);
+        let orden = null;
         try {
-            const orden = await crearOrden(instance, items);
-            await clearCart();
-            navigate('/pedidos', { state: { ordenRecienCreada: orden.id } });
+            orden = await crearOrden(instance, items);
+
+            if (!pagosHabilitados()) {
+                // Sin ms-pagos configurado se mantiene el flujo anterior
+                await clearCart();
+                navigate('/pedidos', { state: { ordenRecienCreada: orden.id } });
+                return;
+            }
+
+            // Botón de pago WebPay: el carrito se vacía recién cuando el pago vuelve AUTHORIZED
+            const pago = await iniciarPago(instance, orden.id);
+            redirigirAWebpay(pago);
         } catch (err) {
-            setErrorCheckout(err.message);
-        } finally {
+            if (orden && err.status === 429) {
+                setErrorCheckout(`${err.message} Tu pedido #${orden.id} quedó guardado y podrás pagarlo desde "Mis pedidos".`);
+            } else if (orden) {
+                setErrorCheckout(`${err.message}. Tu pedido #${orden.id} quedó pendiente de pago en "Mis pedidos".`);
+            } else {
+                setErrorCheckout(err.message);
+            }
             setProcesando(false);
         }
     };
@@ -149,7 +164,9 @@ export default function Cart() {
                             onClick={handleFinalizarCompra}
                             disabled={procesando}
                         >
-                            {procesando ? 'Procesando…' : 'Finalizar compra'}
+                            {procesando
+                                ? (pagosHabilitados() ? 'Redirigiendo a WebPay…' : 'Procesando…')
+                                : (pagosHabilitados() ? 'Pagar con WebPay' : 'Finalizar compra')}
                         </button>
                     </aside>
                 </div>

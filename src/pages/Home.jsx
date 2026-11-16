@@ -5,6 +5,7 @@ import { loginRequest } from '../AuthConfig';
 import { fetchProductos } from '../api/apiService';
 import { useCart } from '../context/CartContext';
 import ProductCard from '../components/ProductCard';
+import Recommendations from '../components/Recommendations';
 import { IconTruck, IconReturn, IconShield, IconBag } from '../components/Icons';
 
 export default function Home({ searchQuery = '' }) {
@@ -91,6 +92,10 @@ export default function Home({ searchQuery = '' }) {
 
             {feedback && (
                 <div className={`alert alert-${feedback.type}`} role="status">{feedback.text}</div>
+            )}
+
+            {!searchQuery && (
+                <Recommendations modo="home" limit={4} onAddToCart={handleAddToCart} addingId={addingId} />
             )}
 
             <section id="catalogo" className="catalog">

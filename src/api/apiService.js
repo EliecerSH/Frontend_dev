@@ -1,5 +1,6 @@
 // src/api/apiService.js
-// Capa de acceso a los 3 microservicios: ms-productos, ms-carrito y ms-usuarios.
+// Capa de acceso a los microservicios: productos, carrito, usuarios, órdenes, auditoría,
+// pagos (Webpay) y recomendaciones.
 import { apiRequest, ENDPOINTS } from '../AuthConfig';
 
 // ---------------------------------------------------------------------------
@@ -31,7 +32,7 @@ const authHeaders = (token) => ({
 const parseError = async (res, fallback) => {
     try {
         const data = await res.json();
-        return data?.mensaje || data?.error || fallback;
+        return data?.mensaje || data?.message || data?.error || fallback;
     } catch {
         return fallback;
     }
@@ -271,4 +272,99 @@ export const fetchAuditoria = async (msalInstance) => {
     }
 
     return res.json();
+};
+
+// ---------------------------------------------------------------------------
+// MS-PAGOS (Backend_dev03) - Webpay Plus + antifraude
+// ---------------------------------------------------------------------------
+
+export const pagosHabilitados = () => Boolean((ENDPOINTS.PAGOS || '').trim());
+
+// POST /api/pagos/iniciar -> { orderId, url, token }. El monto lo calcula el backend desde ms-ordenes.
+// 429 = bloqueo antifraude (demasiados intentos seguidos).
+export const iniciarPago = async (msalInstance, orderId) => {
+    const token = await getAccessToken(msalInstance);
+    const res = await fetch(`${ENDPOINTS.PAGOS}/iniciar`, {
+        method: 'POST',
+        headers: authHeaders(token),
+        body: JSON.stringify({ orderId }),
+    });
+    if (!res.ok) {
+        const mensaje = await parseError(res, 'No se pudo iniciar el pago');
+        const error = new Error(mensaje);
+        error.status = res.status;
+        throw error;
+    }
+    return res.json();
+};
+
+// Webpay exige un POST de formulario con el campo token_ws (no GET, no fetch).
+export const redirigirAWebpay = ({ url, token }) => {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = url;
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'token_ws';
+    input.value = token;
+    form.appendChild(input);
+    document.body.appendChild(form);
+    form.submit();
+};
+
+// GET /api/pagos/orden/{orderId} -> estado del pago (null si la orden aún no tiene pago)
+export const fetchEstadoPago = async (msalInstance, orderId) => {
+    const token = await getAccessToken(msalInstance);
+    const res = await fetch(`${ENDPOINTS.PAGOS}/orden/${orderId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+    });
+    if (res.status === 404) return null;
+    if (!res.ok) throw new Error(await parseError(res, 'No se pudo consultar el pago'));
+    return res.json();
+};
+
+// ---------------------------------------------------------------------------
+// MS-RECOMENDACIONES (Backend_dev03)
+// ---------------------------------------------------------------------------
+
+export const recomendacionesHabilitadas = () => Boolean((ENDPOINTS.RECOMENDACIONES || '').trim());
+
+// GET /me (autenticado) -> { estrategia, items: [...] }
+export const fetchMisRecomendaciones = async (msalInstance, limit = 8) => {
+    const token = await getAccessToken(msalInstance);
+    const res = await fetch(`${ENDPOINTS.RECOMENDACIONES}/me?limit=${limit}`, {
+        headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error(await parseError(res, 'No se pudieron cargar las recomendaciones'));
+    return res.json();
+};
+
+// GET /populares (público)
+export const fetchPopulares = async (limit = 8) => {
+    const res = await fetch(`${ENDPOINTS.RECOMENDACIONES}/populares?limit=${limit}`);
+    if (!res.ok) throw new Error(await parseError(res, 'No se pudieron cargar los productos populares'));
+    return res.json();
+};
+
+// GET /productos/{id}/similares (público)
+export const fetchSimilares = async (productoId, limit = 4) => {
+    const res = await fetch(`${ENDPOINTS.RECOMENDACIONES}/productos/${productoId}/similares?limit=${limit}`);
+    if (!res.ok) throw new Error(await parseError(res, 'No se pudieron cargar productos similares'));
+    return res.json();
+};
+
+// POST /interacciones { productoId, accion: VISTA | CARRITO }. "Fire and forget": un fallo
+// del motor de recomendaciones nunca debe interrumpir la compra.
+export const registrarInteraccion = async (msalInstance, productoId, accion) => {
+    if (!recomendacionesHabilitadas()) return;
+    try {
+        const token = await getAccessToken(msalInstance);
+        await fetch(`${ENDPOINTS.RECOMENDACIONES}/interacciones`, {
+            method: 'POST',
+            headers: authHeaders(token),
+            body: JSON.stringify({ productoId, accion }),
+        });
+    } catch (err) {
+        console.warn('No se pudo registrar la interacción', err);
+    }
 };

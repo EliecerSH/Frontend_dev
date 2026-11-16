@@ -3,9 +3,10 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useIsAuthenticated, useMsal } from '@azure/msal-react';
 import { loginRequest } from '../AuthConfig';
-import { fetchProductoPorId } from '../api/apiService';
+import { fetchProductoPorId, registrarInteraccion } from '../api/apiService';
 import { useCart } from '../context/CartContext';
 import ProductImage from '../components/ProductImage';
+import Recommendations from '../components/Recommendations';
 import { formatPrice } from '../utils/format';
 import { IconArrowLeft } from '../components/Icons';
 
@@ -36,6 +37,11 @@ export default function ProductDetail() {
         };
     }, [id]);
 
+    // Señal VISTA para ms-recomendaciones (solo usuarios autenticados)
+    useEffect(() => {
+        if (isAuthenticated && id) registrarInteraccion(instance, Number(id), 'VISTA');
+    }, [id, isAuthenticated, instance]);
+
     const handleAddToCart = async () => {
         if (!isAuthenticated) {
             try {
@@ -51,6 +57,23 @@ export default function ProductDetail() {
         setFeedback(
             result.ok
                 ? { type: 'success', text: 'Producto agregado al carrito.' }
+                : { type: 'error', text: result.message || 'No se pudo agregar el producto.' }
+        );
+    };
+
+    const handleAddRecomendado = async (p) => {
+        if (!isAuthenticated) {
+            try {
+                await instance.loginPopup(loginRequest);
+            } catch (err) {
+                console.error(err);
+            }
+            return;
+        }
+        const result = await addItem(p.id, 1);
+        setFeedback(
+            result.ok
+                ? { type: 'success', text: `${p.nombre} se agregó al carrito.` }
                 : { type: 'error', text: result.message || 'No se pudo agregar el producto.' }
         );
     };
@@ -110,6 +133,8 @@ export default function ProductDetail() {
                     </div>
                 </div>
             </div>
+
+            <Recommendations modo="similares" productoId={producto.id} limit={4} onAddToCart={handleAddRecomendado} />
         </div>
     );
 }

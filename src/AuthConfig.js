@@ -33,4 +33,7 @@ export const ENDPOINTS = {
     CARRITO: import.meta.env.VITE_MS_CARRITO_URL,
     ORDENES: import.meta.env.VITE_MS_ORDENES_URL,
     AUDITORIA: import.meta.env.VITE_MS_AUDITORIA_URL,
+    // Backend_dev03
+    PAGOS: import.meta.env.VITE_MS_PAGOS_URL,                     // ej: http://IP:8087/api/pagos
+    RECOMENDACIONES: import.meta.env.VITE_MS_RECOMENDACIONES_URL, // ej: http://IP:8088/api/v1/recomendaciones
 };

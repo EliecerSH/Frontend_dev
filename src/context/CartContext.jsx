@@ -7,6 +7,7 @@ import {
     eliminarDelCarrito,
     actualizarCantidadCarrito,
     vaciarCarrito,
+    registrarInteraccion,
 } from '../api/apiService';
 
 const CartContext = createContext(null);
@@ -51,6 +52,8 @@ export function CartProvider({ children }) {
         try {
             const data = await agregarAlCarrito(instance, productoId, cantidad);
             setCarrito(data);
+            // Señal para ms-recomendaciones (Kafka: recomendaciones.interacciones)
+            registrarInteraccion(instance, productoId, 'CARRITO');
             return { ok: true };
         } catch (err) {
             setError(err.message);
