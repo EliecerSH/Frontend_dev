@@ -1115,3 +1115,47 @@ img { max-width: 100%; display: block; }
 @media (max-width: 560px) {
   .reco-grid { grid-template-columns: 1fr; }
 }
+
+/* Acciones del pedido (pagar / eliminar) */
+.order-card-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: flex-end; }
+
+/* Panel de prueba del antifraude */
+.fraud-demo {
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--r);
+  background: var(--surface);
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.25rem;
+}
+.fraud-demo-head { display: flex; gap: 1rem; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; }
+.fraud-demo h2 { font-size: 1rem; margin: 0 0 0.25rem; }
+.fraud-demo p { margin: 0; color: var(--muted); font-size: 0.85rem; max-width: 52ch; }
+.fraud-demo-controls { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+.fraud-demo-controls select {
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.85rem;
+}
+.fraud-demo-results { list-style: none; margin: 0.9rem 0 0; padding: 0; display: grid; gap: 0.35rem; }
+.fraud-demo-results li { display: flex; gap: 0.6rem; align-items: center; font-size: 0.85rem; }
+.fraud-demo-code {
+  min-width: 3rem;
+  text-align: center;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  border-radius: 6px;
+  padding: 0.1rem 0.4rem;
+  background: var(--surface-alt);
+}
+.fraud-demo-results li.is-ok .fraud-demo-code { color: var(--success, #067647); background: var(--success-bg, #ecfdf3); }
+.fraud-demo-results li.is-blocked .fraud-demo-code,
+.fraud-demo-results li.is-error .fraud-demo-code { color: var(--danger); background: var(--danger-bg); }
+.fraud-demo-note { margin-top: 0.75rem !important; }
+
+@media (max-width: 900px) {
+  .order-card-has-action .order-card-actions { grid-column: 1 / -1; justify-content: flex-start; }
+}

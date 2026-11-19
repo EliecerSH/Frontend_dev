@@ -285,6 +285,16 @@ export const fetchAuditoria = async (msalInstance) => {
     return res.json();
 };
 
+// DELETE /ordenes/{id} -> elimina un pedido no pagado (PENDIENTE_PAGO o PAGO_RECHAZADO)
+export const eliminarOrden = async (msalInstance, ordenId) => {
+    const token = await getAccessToken(msalInstance);
+    const res = await fetch(`${ENDPOINTS.ORDENES}/${ordenId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error(await parseError(res, 'No se pudo eliminar el pedido'));
+};
+
 // ---------------------------------------------------------------------------
 // MS-PAGOS (Backend_dev03) - Webpay Plus + antifraude
 // ---------------------------------------------------------------------------
@@ -307,6 +317,29 @@ export const iniciarPago = async (msalInstance, orderId) => {
         throw error;
     }
     return res.json();
+};
+
+// Solo para la demo del antifraude: hace la misma llamada que iniciarPago pero NO lanza error
+// ni redirige a Webpay; devuelve el código HTTP y el mensaje para mostrarlos en pantalla.
+export const probarIntentoPago = async (msalInstance, orderId) => {
+    const token = await getAccessToken(msalInstance);
+    const res = await fetch(`${ENDPOINTS.PAGOS}/iniciar`, {
+        method: 'POST',
+        headers: authHeaders(token),
+        body: JSON.stringify({ orderId }),
+    });
+    let data = null;
+    try {
+        data = await res.json();
+    } catch {
+        /* sin cuerpo */
+    }
+    return {
+        status: res.status,
+        ok: res.ok,
+        mensaje: data?.message || data?.mensaje || (res.ok ? 'Transacción Webpay lista' : res.statusText),
+        bloqueadoHasta: data?.blockedUntil || null,
+    };
 };
 
 // Webpay exige un POST de formulario con el campo token_ws (no GET, no fetch).

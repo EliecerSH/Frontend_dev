@@ -3,7 +3,14 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { useIsAuthenticated, useMsal } from '@azure/msal-react';
 import { loginRequest } from '../AuthConfig';
-import { fetchOrdenes, iniciarPago, redirigirAWebpay, pagosHabilitados } from '../api/apiService';
+import {
+    fetchOrdenes,
+    iniciarPago,
+    redirigirAWebpay,
+    pagosHabilitados,
+    eliminarOrden,
+    probarIntentoPago,
+} from '../api/apiService';
 import { useCart } from '../context/CartContext';
 import { formatPrice } from '../utils/format';
 import { IconLock, IconBox } from '../components/Icons';
@@ -34,6 +41,12 @@ const RESULTADOS_PAGO = {
 
 const sePuedePagar = (estado) => ['PENDIENTE_PAGO', 'PAGO_RECHAZADO'].includes(estado);
 
+// Demo del antifraude (velocity check): visible salvo que VITE_DEMO_ANTIFRAUDE=false
+const DEMO_ANTIFRAUDE = import.meta.env.VITE_DEMO_ANTIFRAUDE !== 'false';
+const SOLICITUDES_DEMO = 5;
+const PAUSA_DEMO_MS = 400;
+const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
+
 export default function Orders() {
     const isAuthenticated = useIsAuthenticated();
     const { instance } = useMsal();
@@ -48,6 +61,11 @@ export default function Orders() {
     const [resultadoPago, setResultadoPago] = useState(null);
     const [pagandoId, setPagandoId] = useState(null);
     const [errorPago, setErrorPago] = useState(null);
+    const [eliminandoId, setEliminandoId] = useState(null);
+    const [aviso, setAviso] = useState(null);
+    const [demoOrdenId, setDemoOrdenId] = useState('');
+    const [demoResultados, setDemoResultados] = useState([]);
+    const [demoCorriendo, setDemoCorriendo] = useState(false);
     const resultadoProcesado = useRef(false);
     const refreshTimer = useRef(null);
 
@@ -98,6 +116,46 @@ export default function Orders() {
         }
     };
 
+    const handleEliminar = async (orden) => {
+        if (!window.confirm(`¿Eliminar el pedido #${orden.id}? Esta acción no se puede deshacer.`)) return;
+        setEliminandoId(orden.id);
+        setErrorPago(null);
+        setAviso(null);
+        try {
+            await eliminarOrden(instance, orden.id);
+            setOrdenes((prev) => prev.filter((o) => o.id !== orden.id));
+            setAviso(`Pedido #${orden.id} eliminado.`);
+        } catch (err) {
+            setErrorPago(err.message);
+        } finally {
+            setEliminandoId(null);
+        }
+    };
+
+    // Envía varias solicitudes de pago seguidas para la MISMA orden, sin ir a Webpay.
+    // Con 3 intentos en 10 s el velocity check (Kafka: pagos.intentos) bloquea al usuario 30 min,
+    // y las solicitudes siguientes responden 429.
+    const handleDemoAntifraude = async () => {
+        const orderId = Number(demoOrdenId || ordenesPagables[0]?.id);
+        if (!orderId) return;
+        setDemoCorriendo(true);
+        setDemoResultados([]);
+        for (let i = 1; i <= SOLICITUDES_DEMO; i++) {
+            let r;
+            try {
+                r = await probarIntentoPago(instance, orderId);
+            } catch (err) {
+                r = { status: 0, ok: false, mensaje: err.message };
+            }
+            setDemoResultados((prev) => [...prev, { n: i, ...r }]);
+            if (i < SOLICITUDES_DEMO) await esperar(PAUSA_DEMO_MS);
+        }
+        setDemoCorriendo(false);
+    };
+
+    const ordenesPagables = ordenes.filter((o) => sePuedePagar(o.estado));
+    const demoBloqueado = demoResultados.some((r) => r.status === 429);
+
     const handleLogin = async () => {
         try {
             await instance.loginPopup(loginRequest);
@@ -133,6 +191,56 @@ export default function Orders() {
             )}
 
             {errorPago && <div className="alert alert-error" role="alert">{errorPago}</div>}
+            {aviso && <div className="alert alert-success" role="status">{aviso}</div>}
+
+            {pagosHabilitados() && DEMO_ANTIFRAUDE && ordenesPagables.length > 0 && (
+                <section className="fraud-demo" aria-label="Prueba del antifraude">
+                    <div className="fraud-demo-head">
+                        <div>
+                            <h2>Prueba del antifraude</h2>
+                            <p>
+                                Envía {SOLICITUDES_DEMO} solicitudes de pago seguidas para un pedido, sin ir a WebPay.
+                                Con 3 intentos en 10 segundos tu usuario queda bloqueado para pagar durante 30 minutos.
+                            </p>
+                        </div>
+                        <div className="fraud-demo-controls">
+                            <select
+                                value={demoOrdenId || ordenesPagables[0]?.id}
+                                onChange={(e) => setDemoOrdenId(e.target.value)}
+                                disabled={demoCorriendo}
+                                aria-label="Pedido para la prueba"
+                            >
+                                {ordenesPagables.map((o) => (
+                                    <option key={o.id} value={o.id}>Pedido #{o.id} · {formatPrice(o.total)}</option>
+                                ))}
+                            </select>
+                            <button className="btn btn-secondary btn-sm" onClick={handleDemoAntifraude} disabled={demoCorriendo}>
+                                {demoCorriendo ? 'Enviando…' : `Enviar ${SOLICITUDES_DEMO} solicitudes`}
+                            </button>
+                        </div>
+                    </div>
+                    {demoResultados.length > 0 && (
+                        <ol className="fraud-demo-results">
+                            {demoResultados.map((r) => (
+                                <li key={r.n} className={r.status === 429 ? 'is-blocked' : r.ok ? 'is-ok' : 'is-error'}>
+                                    <span className="fraud-demo-code">{r.status || '—'}</span>
+                                    <span>
+                                        Solicitud {r.n}: {r.mensaje}
+                                        {r.bloqueadoHasta && ` (hasta las ${new Date(r.bloqueadoHasta).toLocaleTimeString('es-CL')})`}
+                                    </span>
+                                </li>
+                            ))}
+                        </ol>
+                    )}
+                    {!demoCorriendo && demoResultados.length > 0 && (
+                        <p className="fraud-demo-note">
+                            {demoBloqueado
+                                ? 'El velocity check bloqueó al usuario. Revisa los tópicos pagos.intentos y pagos.alertas-fraude en Kafka UI, y el evento pedidos360.pago.bloqueado en Auditoría.'
+                                : 'No hubo bloqueo: puede que el antifraude aún no procesara los intentos. Espera 10 segundos y vuelve a intentarlo.'}
+                        </p>
+                    )}
+                </section>
+            )}
 
             {loading && <p className="state-message" role="status">Cargando pedidos…</p>}
             {error && <p className="state-message state-error">{error}</p>}
@@ -149,7 +257,7 @@ export default function Orders() {
                 <ul className="order-list">
                     {ordenes.map((orden) => (
                         <li
-                            className={`order-card ${pagosHabilitados() && sePuedePagar(orden.estado) ? 'order-card-has-action' : ''}`}
+                            className={`order-card ${sePuedePagar(orden.estado) ? 'order-card-has-action' : ''}`}
                             key={orden.id}
                         >
                             <div className="order-card-main">
@@ -162,14 +270,25 @@ export default function Orders() {
                                 {ESTADOS_LEGIBLES[orden.estado] || orden.estado}
                             </span>
                             <span className="order-card-total">{formatPrice(orden.total)}</span>
-                            {pagosHabilitados() && sePuedePagar(orden.estado) && (
-                                <button
-                                    className="btn btn-primary btn-sm"
-                                    onClick={() => handlePagar(orden)}
-                                    disabled={pagandoId !== null}
-                                >
-                                    {pagandoId === orden.id ? 'Redirigiendo…' : 'Pagar con WebPay'}
-                                </button>
+                            {sePuedePagar(orden.estado) && (
+                                <div className="order-card-actions">
+                                    {pagosHabilitados() && (
+                                        <button
+                                            className="btn btn-primary btn-sm"
+                                            onClick={() => handlePagar(orden)}
+                                            disabled={pagandoId !== null || eliminandoId !== null}
+                                        >
+                                            {pagandoId === orden.id ? 'Redirigiendo…' : 'Pagar con WebPay'}
+                                        </button>
+                                    )}
+                                    <button
+                                        className="btn btn-danger btn-sm"
+                                        onClick={() => handleEliminar(orden)}
+                                        disabled={pagandoId !== null || eliminandoId !== null}
+                                    >
+                                        {eliminandoId === orden.id ? 'Eliminando…' : 'Eliminar'}
+                                    </button>
+                                </div>
                             )}
                         </li>
                     ))}
