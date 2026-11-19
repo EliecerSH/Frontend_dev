@@ -204,6 +204,17 @@ export const fetchClaimsUsuario = async (msalInstance) => {
     return res.json();
 };
 
+// GET /usuarios/me/perfil -> perfil del usuario autenticado (por su OID de Azure). null si aún no existe
+export const fetchMiPerfil = async (msalInstance) => {
+    const token = await getAccessToken(msalInstance);
+    const res = await fetch(`${ENDPOINTS.USUARIOS}/me/perfil`, {
+        headers: { Authorization: `Bearer ${token}` },
+    });
+    if (res.status === 404) return null;
+    if (!res.ok) throw new Error(await parseError(res, 'Error al obtener el perfil'));
+    return res.json();
+};
+
 // GET /usuarios/{id}
 export const fetchUsuario = async (msalInstance, id) => {
     const token = await getAccessToken(msalInstance);

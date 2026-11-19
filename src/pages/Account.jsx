@@ -1,14 +1,10 @@
 // src/pages/Account.jsx
-// Nota: ms-usuarios no expone un endpoint "mi perfil" por OID; solo permite
-// GET/PUT /usuarios/{id} validando que el id pertenezca al usuario autenticado.
-// Por eso, tras registrar el perfil una vez, guardamos su id localmente
-// (asociado al oid de Azure) para poder recuperarlo en próximas visitas.
+// El perfil se obtiene con GET /usuarios/me/perfil (por el OID de Azure). Antes se dependía de un id
+// guardado en localStorage y desde otro navegador el perfil "desaparecía".
 import React, { useEffect, useState } from 'react';
 import { useMsal } from '@azure/msal-react';
-import { fetchClaimsUsuario, fetchUsuario, registrarUsuario, actualizarUsuario } from '../api/apiService';
+import { fetchClaimsUsuario, fetchMiPerfil, registrarUsuario, actualizarUsuario } from '../api/apiService';
 import { useUserRole } from '../context/RoleContext';
-
-const storageKey = (oid) => `nexustech.perfilId.${oid}`;
 
 const emptyForm = { nombre: '', direccion: '', comuna: '', region: '', ciudad: '' };
 
@@ -34,12 +30,9 @@ export default function Account() {
                 if (!activo) return;
                 setClaims(claimsData);
 
-                const oid = claimsData.oid || claimsData.sub;
-                const idGuardado = oid ? localStorage.getItem(storageKey(oid)) : null;
-
-                if (idGuardado) {
-                    const usuario = await fetchUsuario(instance, idGuardado);
-                    if (!activo) return;
+                const usuario = await fetchMiPerfil(instance);
+                if (!activo) return;
+                if (usuario) {
                     setPerfilId(usuario.id);
                     setForm({
                         nombre: usuario.nombre || '',
@@ -82,8 +75,6 @@ export default function Account() {
             } else {
                 const nuevo = await registrarUsuario(instance, form);
                 setPerfilId(nuevo.id);
-                const oid = claims?.oid || claims?.sub;
-                if (oid) localStorage.setItem(storageKey(oid), nuevo.id);
             }
             setFeedback({ type: 'success', text: 'Perfil guardado correctamente.' });
         } catch (err) {

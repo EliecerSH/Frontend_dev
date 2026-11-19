@@ -9,7 +9,9 @@ import { IconActivity, IconCopy, IconRefresh, IconSearch, IconLock } from '../co
 // Asigna un estilo visual al badge según el tipo de evento
 const getEventBadgeClass = (tipo = '') => {
     const t = String(tipo).toLowerCase();
-    if (t.includes('orden') || t.includes('cread')) return 'badge-audit-order';
+    if (t.includes('error') || t.includes('fall') || t.includes('rechaz') || t.includes('rejected')
+        || t.includes('bloquead') || t.includes('fraude')) return 'badge-audit-error';
+    if (t.includes('orden') || t.includes('cread') || t.includes('pago')) return 'badge-audit-order';
     if (t.includes('stock') || t.includes('inventario')) return 'badge-audit-stock';
     if (t.includes('error') || t.includes('fall')) return 'badge-audit-error';
     if (t.includes('usuario') || t.includes('user')) return 'badge-audit-user';
